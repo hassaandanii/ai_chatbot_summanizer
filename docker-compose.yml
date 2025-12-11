@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Service 1: Vector Database
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: vector_db
+    ports:
+      - "8001:8000" # Exposing on 8001 locally to avoid conflict if you run backend locally
+    volumes:
+      - chroma_data:/chroma/chroma # Persist data
+
+  # Service 2: ML Application Backend
+  backend:
+    build: ./backend
+    container_name: ml_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - chromadb
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface # Cache models so we don't redownload every time
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+
+  # Service 3: UI Application
+  frontend:
+    build: ./frontend
+    container_name: gradio_ui
+    ports:
+      - "7860:7860"
+    depends_on:
+      - backend
+
+volumes:
+  chroma_data:
+  huggingface_cache:
