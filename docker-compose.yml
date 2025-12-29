@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # 1. Vector Database (Mapped to 9002)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: vector_db
+    ports:
+      - "9002:8000"  # Host: 9002, Internal: 8000 (Standard Chroma port)
+    volumes:
+      - chroma_data:/chroma/chroma
+
+  # 2. Backend (Mapped to 9001)
+  backend:
+    build: ./backend
+    container_name: ml_backend
+    ports:
+      - "9001:9001" # Host: 9001, Internal: 9001
+    depends_on:
+      - chromadb
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+
+  # 3. Frontend (Mapped to 9000)
+  frontend:
+    build: ./frontend
+    container_name: gradio_ui
+    ports:
+      - "9000:9000" # Host: 9000, Internal: 9000
+    depends_on:
+      - backend
+
+volumes:
+  chroma_data:
+  huggingface_cache:
